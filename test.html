@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bt-printer-js — Test &amp; Preview</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a1a;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 0.85rem;
+      margin-bottom: 24px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 768px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      margin-bottom: 16px;
+      color: #333;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+    }
+
+    /* Connection */
+    .connection-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #ccc;
+      display: inline-block;
+    }
+    .status-dot.connected { background: #22c55e; }
+    .status-dot.error { background: #ef4444; }
+
+    #statusText {
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    /* Buttons */
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #2563eb; }
+
+    .btn-danger { background: #ef4444; color: #fff; }
+    .btn-danger:hover:not(:disabled) { background: #dc2626; }
+
+    .btn-secondary { background: #e5e7eb; color: #333; }
+    .btn-secondary:hover:not(:disabled) { background: #d1d5db; }
+
+    .btn-success { background: #22c55e; color: #fff; }
+    .btn-success:hover:not(:disabled) { background: #16a34a; }
+
+    /* Settings */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #555;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    select, input[type="number"] {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      background: #fafafa;
+    }
+
+    /* Content editor */
+    .block-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+      max-height: 420px;
+      overflow-y: auto;
+    }
+
+    .block-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px;
+      background: #fafafa;
+      position: relative;
+    }
+
+    .block-item .block-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .block-item .block-type {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #3b82f6;
+    }
+
+    .block-item .remove-btn {
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .block-item .remove-btn:hover { color: #ef4444; }
+
+    .block-item textarea {
+      width: 100%;
+      min-height: 50px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      resize: vertical;
+    }
+
+    .block-options {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .block-options label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+    }
+
+    .block-options select, .block-options input[type="number"] {
+      width: auto;
+      padding: 3px 6px;
+      font-size: 0.75rem;
+    }
+
+    .add-block-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .add-block-row button { font-size: 0.75rem; padding: 5px 10px; }
+
+    /* Preview */
+    .preview-area {
+      background: #f8f8f8;
+      border: 1px dashed #ccc;
+      border-radius: 8px;
+      min-height: 200px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 16px;
+      overflow: auto;
+    }
+
+    .preview-area img {
+      max-width: 100%;
+      image-rendering: pixelated;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .preview-placeholder {
+      color: #aaa;
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 40px 0;
+    }
+
+    /* Actions */
+    .actions-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Log */
+    #log {
+      font-family: monospace;
+      font-size: 0.75rem;
+      background: #1a1a2e;
+      color: #a5f3a5;
+      border-radius: 8px;
+      padding: 12px;
+      max-height: 180px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin-top: 16px;
+    }
+
+    /* Printer info */
+    .info-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 12px;
+      font-size: 0.8rem;
+    }
+    .info-grid dt { font-weight: 600; color: #555; }
+    .info-grid dd { color: #333; }
+  </style>
+</head>
+<body>
+
+  <h1>🖨️ bt-printer-js Test Bench</h1>
+  <p class="subtitle">Connect to a Bluetooth thermal printer, compose content blocks, preview, and print.</p>
+
+  <div class="layout">
+    <!-- LEFT COLUMN -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Connection -->
+      <div class="card">
+        <h2>Connection</h2>
+        <div class="connection-row">
+          <button id="btnConnect" class="btn-primary" onclick="doConnect()">Connect</button>
+          <button id="btnDisconnect" class="btn-danger" onclick="doDisconnect()" disabled>Disconnect</button>
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">Not connected</span>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="card">
+        <h2>Printer Settings</h2>
+        <div class="settings-grid">
+          <div>
+            <label for="paperWidth">Paper Width</label>
+            <select id="paperWidth" onchange="onSettingsChange()">
+              <option value="58" selected>58 mm</option>
+              <option value="80">80 mm</option>
+            </select>
+          </div>
+          <div>
+            <label for="font">Font</label>
+            <select id="font" onchange="onSettingsChange()">
+              <option value="A" selected>Font A (12×24)</option>
+              <option value="B">Font B (9×17)</option>
+            </select>
+          </div>
+        </div>
+        <div id="printerInfo" style="margin-top:12px;display:none;">
+          <dl class="info-grid" id="infoGrid"></dl>
+        </div>
+        <button class="btn-secondary" style="margin-top:10px;" onclick="doCheckStatus()">Check Status</button>
+      </div>
+
+      <!-- Content Blocks -->
+      <div class="card">
+        <h2>Content Blocks</h2>
+        <ul class="block-list" id="blockList"></ul>
+        <div class="add-block-row">
+          <button class="btn-secondary" onclick="addBlock('text')">+ Text</button>
+          <button class="btn-secondary" onclick="addBlock('image')">+ Image</button>
+          <button class="btn-secondary" onclick="addBlock('barcode')">+ Barcode</button>
+          <button class="btn-secondary" onclick="addBlock('qr')">+ QR Code</button>
+          <button class="btn-secondary" onclick="addBlock('feed')">+ Feed</button>
+          <button class="btn-secondary" onclick="addBlock('cut')">+ Cut</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Preview -->
+      <div class="card">
+        <h2>Print Preview</h2>
+        <div class="preview-area" id="previewArea">
+          <div class="preview-placeholder">Add content blocks and click "Update Preview"</div>
+        </div>
+        <div class="actions-row">
+          <button class="btn-primary" onclick="doPreview()">Update Preview</button>
+          <button class="btn-success" onclick="doPrint()" id="btnPrint" disabled>Print</button>
+          <button class="btn-secondary" onclick="doDownloadPreview()">Download PNG</button>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div class="card">
+        <h2>Log</h2>
+        <div id="log">Ready.\n</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load the library from dist -->
+  <script type="module">
+    import {
+      BtPrinter,
+      Alignment,
+      Codepage,
+    } from './dist/index.esm.js';
+
+    // ---- State ----
+    let printer = null;
+    let blocks = [];
+    let lastPreviewDataUrl = null;
+    let blockIdCounter = 0;
+
+    // Expose to global scope for inline onclick handlers
+    window.doConnect = doConnect;
+    window.doDisconnect = doDisconnect;
+    window.doCheckStatus = doCheckStatus;
+    window.doPreview = doPreview;
+    window.doPrint = doPrint;
+    window.doDownloadPreview = doDownloadPreview;
+    window.addBlock = addBlock;
+    window.onSettingsChange = onSettingsChange;
+    window.Alignment = Alignment;
+
+    // ---- Init ----
+    function createPrinter() {
+      const pw = parseInt(document.getElementById('paperWidth').value) || 58;
+      printer = new BtPrinter({ paperWidth: pw });
+      printer.on('connected', () => {
+        log('✅ Connected to printer');
+        updateConnectionUI(true);
+        showPrinterInfo();
+      });
+      printer.on('disconnected', () => {
+        log('❌ Disconnected');
+        updateConnectionUI(false);
+      });
+      printer.on('statusChange', (s) => {
+        log('Status change: ' + JSON.stringify(s));
+      });
+    }
+
+    function init() {
+      try {
+        createPrinter();
+      // Add some default blocks
+      addBlock('text');
+      addBlock('feed');
+      addBlock('cut');
+      } catch (e) {
+        console.error('init() failed:', e);
+        log('⚠️ Init failed: ' + e.message);
+      }
+    }
+
+    // ---- Connection ----
+    async function doConnect() {
+      try {
+        if (!printer) {
+          createPrinter();
+        }
+        log('Requesting Bluetooth device…');
+        const pw = parseInt(document.getElementById('paperWidth').value) || 58;
+        printer.setPaperWidth(pw);
+        await printer.connect();
+      } catch (e) {
+        log('⚠️ Connect failed: ' + e.message);
+      }
+    }
+
+    function doDisconnect() {
+      printer.disconnect();
+      updateConnectionUI(false);
+      log('Disconnected.');
+    }
+
+    function updateConnectionUI(connected) {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      const btnC = document.getElementById('btnConnect');
+      const btnD = document.getElementById('btnDisconnect');
+      const btnP = document.getElementById('btnPrint');
+
+      dot.className = 'status-dot' + (connected ? ' connected' : '');
+      text.textContent = connected ? 'Connected' : 'Not connected';
+      btnC.disabled = connected;
+      btnD.disabled = !connected;
+      btnP.disabled = !connected;
+    }
+
+    // ---- Status ----
+    async function doCheckStatus() {
+      if (!printer.connected) {
+        log('⚠️ Not connected — showing offline settings only.');
+        showPrinterInfo();
+        return;
+      }
+      try {
+        const status = await printer.getStatus();
+        log('Status: ' + JSON.stringify(status));
+      } catch (e) {
+        log('⚠️ Status error: ' + e.message);
+      }
+    }
+
+    function showPrinterInfo() {
+      const settings = printer.getSettings();
+      const config = printer.getCharWidthConfig();
+      const grid = document.getElementById('infoGrid');
+      grid.innerHTML = `
+        <dt>Model</dt><dd>${settings.modelName}</dd>
+        <dt>Paper</dt><dd>${settings.paperWidth} mm</dd>
+        <dt>Chars/line (A)</dt><dd>${settings.maxCharsPerLineA}</dd>
+        <dt>Chars/line (B)</dt><dd>${settings.maxCharsPerLineB}</dd>
+        <dt>Supports cut</dt><dd>${settings.supportsCut ? 'Yes' : 'No'}</dd>
+        <dt>Cash drawer</dt><dd>${settings.supportsCashDrawer ? 'Yes' : 'No'}</dd>
+        <dt>Codepages</dt><dd>${settings.supportedCodepages.join(', ')}</dd>
+        <dt>Current fit</dt><dd>${config.charsPerLine} chars (Font ${config.font})</dd>
+      `;
+      document.getElementById('printerInfo').style.display = 'block';
+    }
+
+    // ---- Settings ----
+    function onSettingsChange() {
+      const pw = parseInt(document.getElementById('paperWidth').value);
+      const font = document.getElementById('font').value;
+      printer.setPaperWidth(pw);
+      printer.setFont(font);
+      log(`Settings → paper: ${pw}mm, font: ${font}`);
+      showPrinterInfo();
+    }
+
+    // ---- Blocks ----
+    function addBlock(type) {
+      const id = blockIdCounter++;
+      const block = { _id: id, type };
+
+      switch (type) {
+        case 'text':
+          block.text = 'Hello, Printer!';
+          block.bold = false;
+          block.underline = false;
+          block.inverted = false;
+          block.align = Alignment.Left;
+          block.widthMultiplier = 1;
+          block.heightMultiplier = 1;
+          break;
+        case 'image':
+          block.base64 = null;
+          block._imgEl = null;
+          block.align = Alignment.Center;
+          block.widthPercent = 100;
+          break;
+        case 'barcode':
+          block.data = '123456789012';
+          block.align = Alignment.Center;
+          break;
+        case 'qr':
+          block.data = 'https://example.com';
+          block.align = Alignment.Center;
+          break;
+        case 'feed':
+          block.lines = 3;
+          break;
+        case 'cut':
+          break;
+      }
+
+      blocks.push(block);
+      renderBlocks();
+    }
+
+    function removeBlock(id) {
+      blocks = blocks.filter(b => b._id !== id);
+      renderBlocks();
+    }
+    window.removeBlock = removeBlock;
+
+    function renderBlocks() {
+      const list = document.getElementById('blockList');
+      list.innerHTML = '';
+
+      blocks.forEach((block) => {
+        const li = document.createElement('li');
+        li.className = 'block-item';
+
+        let inner = `
+          <div class="block-header">
+            <span class="block-type">${block.type}</span>
+            <button class="remove-btn" onclick="removeBlock(${block._id})" title="Remove">✕</button>
+          </div>
+        `;
+
+        if (block.type === 'text') {
+          inner += `
+            <textarea
+              oninput="updateBlockField(${block._id}, 'text', this.value)"
+            >${block.text || ''}</textarea>
+            <div class="block-options">
+              <label><input type="checkbox" ${block.bold ? 'checked' : ''}
+                onchange="updateBlockField(${block._id}, 'bold', this.checked)"> Bold</label>
+              <label><input type="checkbox" ${block.underline ? 'checked' : ''}
+                onchange="updateBlockField(${block._id}, 'underline', this.checked)"> Underline</label>
+              <label><input type="checkbox" ${block.inverted ? 'checked' : ''}
+                onchange="updateBlockField(${block._id}, 'inverted', this.checked)"> Inverted</label>
+              <label>Align
+                <select onchange="updateBlockField(${block._id}, 'align', parseInt(this.value))">
+                  <option value="0" ${block.align === 0 ? 'selected' : ''}>Left</option>
+                  <option value="1" ${block.align === 1 ? 'selected' : ''}>Center</option>
+                  <option value="2" ${block.align === 2 ? 'selected' : ''}>Right</option>
+                </select>
+              </label>
+              <label>W×
+                <input type="number" min="1" max="8" value="${block.widthMultiplier || 1}" style="width:50px"
+                  onchange="updateBlockField(${block._id}, 'widthMultiplier', parseInt(this.value))">
+              </label>
+              <label>H×
+                <input type="number" min="1" max="8" value="${block.heightMultiplier || 1}" style="width:50px"
+                  onchange="updateBlockField(${block._id}, 'heightMultiplier', parseInt(this.value))">
+              </label>
+            </div>
+          `;
+        } else if (block.type === 'image') {
+          const hasImg = !!block.base64;
+          inner += `
+            <div style="margin-bottom:8px;">
+              <input type="file" accept="image/*" onchange="handleImageFile(${block._id}, this)">
+            </div>
+            ${hasImg ? `<img src="${block.base64}" style="max-width:100%;max-height:120px;border-radius:4px;margin-bottom:8px;" alt="preview">` : '<div style="color:#aaa;font-size:0.8rem;margin-bottom:8px;">No image selected</div>'}
+            <div class="block-options">
+              <label>Align
+                <select onchange="updateBlockField(${block._id}, 'align', parseInt(this.value))">
+                  <option value="0" ${block.align === 0 ? 'selected' : ''}>Left</option>
+                  <option value="1" ${block.align === 1 ? 'selected' : ''}>Center</option>
+                  <option value="2" ${block.align === 2 ? 'selected' : ''}>Right</option>
+                </select>
+              </label>
+              <label>Width %
+                <input type="number" min="1" max="100" value="${block.widthPercent || 100}" style="width:60px"
+                  onchange="updateBlockField(${block._id}, 'widthPercent', parseInt(this.value))">
+              </label>
+            </div>
+          `;
+        } else if (block.type === 'barcode' || block.type === 'qr') {
+          inner += `
+            <input type="text" value="${block.data || ''}" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-family:monospace;font-size:0.85rem;"
+              oninput="updateBlockField(${block._id}, 'data', this.value)">
+            <div class="block-options">
+              <label>Align
+                <select onchange="updateBlockField(${block._id}, 'align', parseInt(this.value))">
+                  <option value="0" ${block.align === 0 ? 'selected' : ''}>Left</option>
+                  <option value="1" ${block.align === 1 ? 'selected' : ''}>Center</option>
+                  <option value="2" ${block.align === 2 ? 'selected' : ''}>Right</option>
+                </select>
+              </label>
+            </div>
+          `;
+        } else if (block.type === 'feed') {
+          inner += `
+            <div class="block-options">
+              <label>Lines
+                <input type="number" min="1" max="20" value="${block.lines || 1}" style="width:60px"
+                  onchange="updateBlockField(${block._id}, 'lines', parseInt(this.value))">
+              </label>
+            </div>
+          `;
+        }
+
+        li.innerHTML = inner;
+        list.appendChild(li);
+      });
+    }
+
+    function updateBlockField(id, field, value) {
+      const block = blocks.find(b => b._id === id);
+      if (block) block[field] = value;
+    }
+    window.updateBlockField = updateBlockField;
+
+    function handleImageFile(id, input) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const base64 = e.target.result;
+        const block = blocks.find(b => b._id === id);
+        if (!block) return;
+        block.base64 = base64;
+        // Pre-load image element so preview can measure dimensions
+        const img = new Image();
+        img.onload = function () {
+          block._imgEl = img;
+          renderBlocks();
+          log('Image loaded: ' + file.name + ' (' + img.width + '×' + img.height + ')');
+        };
+        img.src = base64;
+      };
+      reader.readAsDataURL(file);
+    }
+    window.handleImageFile = handleImageFile;
+
+    // ---- Preview ----
+    function doPreview() {
+      try {
+        const printBlocks = blocks.map(b => {
+          const pb = { ...b };
+          delete pb._id;
+          return pb;
+        });
+
+        lastPreviewDataUrl = printer.preview(printBlocks);
+        const area = document.getElementById('previewArea');
+        area.innerHTML = `<img src="${lastPreviewDataUrl}" alt="Print preview">`;
+        log('Preview updated (' + printBlocks.length + ' blocks)');
+      } catch (e) {
+        log('⚠️ Preview error: ' + e.message);
+      }
+    }
+
+    function doDownloadPreview() {
+      if (!lastPreviewDataUrl) {
+        doPreview();
+      }
+      if (!lastPreviewDataUrl) return;
+
+      const a = document.createElement('a');
+      a.href = lastPreviewDataUrl;
+      a.download = 'print-preview.png';
+      a.click();
+      log('Downloaded preview PNG.');
+    }
+
+    // ---- Print ----
+    async function doPrint() {
+      if (!printer.connected) {
+        log('⚠️ Not connected.');
+        return;
+      }
+      try {
+        const printBlocks = blocks.map(b => {
+          const pb = { ...b };
+          delete pb._id;
+          return pb;
+        });
+        log('Sending ' + printBlocks.length + ' blocks to printer…');
+        await printer.print(printBlocks);
+        log('✅ Print complete!');
+      } catch (e) {
+        log('⚠️ Print error: ' + e.message);
+      }
+    }
+
+    // ---- Log ----
+    function log(msg) {
+      const el = document.getElementById('log');
+      const time = new Date().toLocaleTimeString();
+      el.textContent += `[${time}] ${msg}\n`;
+      el.scrollTop = el.scrollHeight;
+    }
+
+    // Boot
+    init();
+  </script>
+</body>
+</html>

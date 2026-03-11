@@ -1,0 +1,31 @@
+{
+  "name": "bt-printer-js",
+  "version": "1.0.0",
+  "description": "Web Bluetooth thermal printer library for Angular/React projects. Connect, configure, preview, and print via ESC/POS.",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "bluetooth",
+    "printer",
+    "thermal",
+    "escpos",
+    "web-bluetooth",
+    "receipt"
+  ],
+  "type": "module",
+  "license": "MIT",
+  "devDependencies": {
+    "@rollup/plugin-typescript": "^11.1.6",
+    "rollup": "^4.9.6",
+    "tslib": "^2.6.2",
+    "typescript": "^5.3.3"
+  }
+}
